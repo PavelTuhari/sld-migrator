@@ -1,0 +1,134 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SLD Migrator — руководство пользователя</title><style>
+:root{--bg:#f4f6fa;--card:#fff;--ink:#0f172a;--mut:#64748b;--line:#dbe1ea;--blue:#1d4ed8;--green:#15803d;
+--teal:#0f766e;--red:#b91c1c;--amber:#b45309;--gray:#94a3b8}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.5 "Segoe UI",Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:#0f172a;color:#fff;padding:14px 24px;position:sticky;top:0;z-index:20}
+header h1{margin:0;font-size:19px}
+header .sub{color:#cbd5e1;font-size:13px;margin-top:2px}
+header a{color:#93c5fd;margin-left:14px;font-size:13px}
+.badges{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.b{padding:2px 10px;border-radius:99px;font-size:12px;font-weight:600;background:#334155;color:#fff;white-space:nowrap}
+.b.dry{background:var(--teal)}.b.real{background:var(--red)}.b.ok{background:var(--green)}.b.off{background:#64748b}.b.warn{background:var(--amber)}
+main{max-width:1500px;margin:0 auto;padding:18px 24px 60px}
+section{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 20px;margin-bottom:18px}
+h2{margin:0 0 4px;font-size:17px}h3{font-size:15px;margin:16px 0 6px}
+.lead{color:var(--mut);margin:0 0 12px}
+.bar{height:10px;background:#e2e8f0;border-radius:99px;overflow:hidden}
+.bar>i{display:block;height:100%;background:linear-gradient(90deg,#15803d,#22c55e);transition:width .5s}
+.here{font-size:15px;font-weight:600;margin:10px 0 2px}
+.lane{border-left:5px solid #94a3b8;padding:8px 0 8px 14px;margin:14px 0}
+.lane.E0{border-color:#64748b}.lane.E1{border-color:#0ea5e9}.lane.E2{border-color:#7c3aed}.lane.E3{border-color:#16a34a}.lane.RB{border-color:#dc2626}
+.lane h3{margin:0}.lane .sub{color:var(--mut);font-size:13px;margin-bottom:8px}
+.flow{display:flex;flex-wrap:wrap;gap:10px 0;align-items:stretch}
+.arrow{align-self:center;color:#94a3b8;font-size:18px;padding:0 4px;user-select:none}
+.step{width:205px;border:2px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff;cursor:pointer;position:relative;
+display:flex;flex-direction:column;gap:3px;transition:box-shadow .15s}
+.step:hover{box-shadow:0 3px 12px rgba(15,23,42,.18)}
+.step .id{font-weight:700;font-size:12px;color:var(--mut);display:flex;justify-content:space-between;gap:6px}
+.step .t{font-weight:600;font-size:13px;line-height:1.3}
+.step .m{font-size:11.5px;color:var(--mut)}
+.k{font-size:10.5px;font-weight:700;padding:0 6px;border-radius:4px;text-transform:uppercase;letter-spacing:.3px}
+.k.manual{background:#e2e8f0;color:#334155}.k.check{background:#dbeafe;color:#1e40af}.k.change{background:#fee2e2;color:#991b1b}.k.long{background:#7c3aed;color:#fff}
+.chip{font-size:11.5px;font-weight:700;margin-top:auto}
+.step.pending{background:#f8fafc}.step.pending .chip{color:var(--gray)}
+.step.done{border-color:#22c55e;background:#f0fdf4}.step.done .chip{color:var(--green)}
+.step.dry{border-color:#14b8a6;border-style:dashed;background:#f0fdfa}.step.dry .chip{color:var(--teal)}
+.step.skipped{border-color:#f59e0b;background:#fffbeb}.step.skipped .chip{color:var(--amber)}
+.step.failed{border-color:#ef4444;background:#fef2f2}.step.failed .chip{color:var(--red)}
+.step.running{border-color:#3b82f6;background:#eff6ff;animation:pulse 1.2s infinite}.step.running .chip{color:var(--blue)}
+.step.current{box-shadow:0 0 0 4px #fde047;border-color:#ca8a04}
+.step.current::before{content:"ВЫ ЗДЕСЬ";position:absolute;top:-11px;left:10px;background:#ca8a04;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px}
+.step.sel{outline:3px solid #0f172a}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(59,130,246,.6)}100%{box-shadow:0 0 0 12px rgba(59,130,246,0)}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mut);margin-top:8px}
+.legend i{display:inline-block;width:14px;height:14px;border-radius:4px;border:2px solid;vertical-align:-3px;margin-right:4px}
+#detail{position:fixed;right:0;top:0;bottom:0;width:560px;max-width:100%;background:#fff;border-left:1px solid var(--line);
+box-shadow:-8px 0 30px rgba(15,23,42,.2);z-index:30;padding:18px 20px;overflow:auto;transform:translateX(105%);transition:transform .2s}
+#detail.open{transform:none}
+#detail .x{position:absolute;right:14px;top:10px;font-size:22px;cursor:pointer;color:var(--mut)}
+pre{background:#0f172a;color:#e2e8f0;padding:10px 12px;border-radius:8px;overflow:auto;font:12px/1.45 Consolas,monospace;white-space:pre}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border:1px solid var(--line);padding:5px 8px;text-align:left;vertical-align:top}
+th{background:#f1f5f9}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1000px){.grid2{grid-template-columns:1fr}}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:13px}
+.kv b{color:var(--mut);font-weight:600}
+.pb{height:14px;background:#e2e8f0;border-radius:4px;overflow:hidden;min-width:140px}
+.pb>i{display:block;height:100%;background:#3b82f6}
+.st-ok{color:var(--green);font-weight:700}.st-warn{color:var(--amber);font-weight:700}.st-fail{color:var(--red);font-weight:700}.st-info{color:var(--mut)}
+.note{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin:10px 0}
+.danger{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 12px;margin:10px 0}
+.okbox{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 12px;margin:10px 0}
+nav.toc{columns:2;font-size:13.5px}nav.toc a{display:block;color:var(--blue);text-decoration:none;padding:1px 0}
+code{background:#eef2f7;padding:1px 5px;border-radius:4px;font:12.5px Consolas,monospace}
+img.shot{max-width:100%;border:1px solid var(--line);border-radius:8px;margin:6px 0 2px;box-shadow:0 2px 10px rgba(15,23,42,.12)}
+figure{margin:14px 0}figcaption{font-size:12.5px;color:var(--mut)}
+svg text{font-family:"Segoe UI",Arial,sans-serif}
+
+main{max-width:1100px} section p,section li{max-width:900px}
+.hero{background:linear-gradient(135deg,#0f172a,#1e3a8a);color:#fff;border:0}
+.hero h2{font-size:24px;margin-bottom:8px}.hero p{color:#dbeafe;max-width:800px}
+.btn{display:inline-block;background:#22c55e;color:#052e16;font-weight:700;padding:11px 20px;border-radius:9px;text-decoration:none;margin:8px 10px 4px 0;font-size:15px}
+.btn.alt{background:#e2e8f0;color:#0f172a}.btn small{display:block;font-weight:400;font-size:12px}
+figure h3{margin:22px 0 2px}figure p{margin:0 0 6px;color:#475569}
+ol.big li{margin:6px 0}
+</style></head><body>
+<header><h1>SLD Migrator — руководство пользователя
+<a href="documentation.html">Полная документация →</a><a href="process_map.html">Карта процесса →</a><a href="https://github.com/PavelTuhari/sld-migrator">GitHub →</a></h1>
+<div class="sub">Утилита с окном для пошагового переноса «блокировки продаж в минус» с тестовой базы Oracle на продуктивную (UNA.md back-office).</div></header>
+<main>
+<section class="hero"><h2>Скачать и запустить</h2>
+<p>В архиве всё нужное: программа на Python, SQL-скрипты, документация и снимки экрана. Установка не требуется: распаковать и запустить.</p>
+<a class="btn" href="https://github.com/PavelTuhari/sld-migrator/releases/latest/download/sld-migrator-setup.exe">⬇ Самораспаковывающийся архив (.exe)<small>Windows: запустить, выбрать папку</small></a>
+<a class="btn alt" href="https://github.com/PavelTuhari/sld-migrator/releases/latest/download/sld-migrator.zip">⬇ Обычный архив (.zip)<small>то же содержимое</small></a>
+<p style="font-size:13px">Файл .exe не подписан, поэтому Windows может показать предупреждение SmartScreen: «Подробнее» → «Выполнить в любом случае». Если это неудобно, берите .zip.</p></section>
+
+<section><h2>Что это</h2>
+<p>Кассы должны отказывать в продаже товара, которого нет на остатке. Для этого back-office должен отдавать остаток мгновенно. Остаток хранится в таблицах <code>TXSLD</code> и <code>TSLD</code>, их нужно один раз пересчитать и затем поддерживать триггером.</p>
+<p>Утилита ведёт весь перенос по шагам: ставит новый пакет <code>PKG_SLD_UTIL</code>, закрывает проводки, пересчитывает сальдо, включает онлайн-запись, перенастраивает задания и сверяет результат. На каждом шаге видно точный SQL, результат и текущий статус.</p>
+<div class="okbox"><b>По умолчанию утилита ничего не меняет.</b> Включён сухой прогон: проверки выполняются, изменяющие шаги только показывают SQL. Так можно безопасно пройти весь процесс и на тестовой, и на продуктивной базе.</div></section>
+
+<section><h2>Быстрый старт</h2>
+<ol class="big">
+<li>Установите <b>Python 3.8+</b> для Windows (<a href="https://www.python.org/downloads/">python.org</a>). Дополнительные пакеты не нужны.</li>
+<li>Убедитесь, что на компьютере есть <b>Oracle sqlplus</b> (любой клиент 11g–19c).</li>
+<li>Скачайте архив и распакуйте в любую папку. Получится папка <code>sld-migrator</code>.</li>
+<li>Откройте <code>sld_migrator\sld_migrator.ini</code> в Блокноте и заполните: путь к <code>sqlplus</code>, для каждого профиля — <code>dsn</code> (адрес базы), <code>user</code> и <code>expected_host</code> (имя сервера базы).</li>
+<li>Запустите <code>sld_migrator\run.bat</code>.</li>
+<li>Выберите профиль <b>TEST</b>, нажмите «Подключиться», введите пароль.</li>
+<li>Идите по шагам сверху вниз: выбрать шаг с пометкой «вы здесь» → прочитать описание → «Выполнить шаг».</li>
+</ol>
+<div class="note">Как узнать <code>expected_host</code>: выполните в базе <code>select sys_context('USERENV','SERVER_HOST') from dual;</code>. Утилита сверяет это имя при каждом запуске и отказывается работать, если подключилась не к той базе.</div></section>
+
+<section><h2>Что в архиве</h2>
+<table><tr><th>Папка / файл</th><th>Что это</th></tr>
+<tr><td><code>sld_migrator\sld_migrator.py</code></td><td>программа: окно, запуск процессов, монитор, встроенный веб-сервер</td></tr>
+<tr><td><code>sld_migrator\steps.py</code></td><td>каталог шагов и проверок с SQL</td></tr>
+<tr><td><code>sld_migrator\webdocs.py</code></td><td>встроенные HTML-страницы: документация и карта процесса</td></tr>
+<tr><td><code>sld_migrator\sld_migrator.ini</code></td><td>настройки: sqlplus, профили баз, пороги проверок. Паролей в файле нет</td></tr>
+<tr><td><code>sld_migrator\run.bat</code></td><td>запуск</td></tr>
+<tr><td><code>sld_migrator\selftest_demo.py</code></td><td>автоматический сухой прогон на тестовой базе со снимками экрана</td></tr>
+<tr><td><code>scripts\00…08, 99</code></td><td>SQL-скрипты миграции. Утилита читает из них код пакета (<code>02</code>, <code>03</code>); остальные — тот же порядок для ручного запуска</td></tr>
+<tr><td><code>docs\</code></td><td>это руководство, полная документация, карта процесса, снимки экрана</td></tr></table></section>
+
+<section><h2>Как выглядит работа: снимки экрана</h2>
+<p>Снимки сняты во время сухого прогона на тестовой базе. Щелчок по снимку открывает его в полном размере.</p><figure id="f1"><h3>Шаг 1. Запуск</h3><p>После <code>run.bat</code> открывается окно. Слева все шаги миграции по этапам, справа описание выбранного шага. Зелёная полоса сообщает, что включён сухой прогон: база не меняется.</p><a href="screenshots/01_start.png"><img class="shot" loading="lazy" src="screenshots/01_start.png" alt="Шаг 1. Запуск"></a></figure><figure id="f2"><h3>Шаг 2. Подключение</h3><p>Выберите профиль, нажмите «Подключиться», введите пароль. Метка станет зелёной для тестовой базы и красной для продуктивной.</p><a href="screenshots/02_connected.png"><img class="shot" loading="lazy" src="screenshots/02_connected.png" alt="Шаг 2. Подключение"></a></figure><figure id="f3"><h3>Шаг 3. Предпроверка</h3><p>Шаг P0 запускает все проверки. Результат каждой строки виден в нижнем окне шага.</p><a href="screenshots/03_precheck_step.png"><img class="shot" loading="lazy" src="screenshots/03_precheck_step.png" alt="Шаг 3. Предпроверка"></a></figure><figure id="f4"><h3>Вкладка «Проверки»</h3><p>36 проверок: рабочее место, та ли база, права, объекты, триггеры, задания, место, блокировки, сальдо. Красная строка означает «стоп».</p><a href="screenshots/04_checks.png"><img class="shot" loading="lazy" src="screenshots/04_checks.png" alt="Вкладка «Проверки»"></a></figure><figure id="f5"><h3>Установка пакета</h3><p>Перед установкой утилита сравнивает код в базе с файлом. Если код совпадает, установка пропускается.</p><a href="screenshots/05_package_compare.png"><img class="shot" loading="lazy" src="screenshots/05_package_compare.png" alt="Установка пакета"></a></figure><figure id="f6"><h3>Изменяющий шаг в сухом прогоне</h3><p>SQL показан серым и не выполняется. Выполняется только контрольный запрос на чтение.</p><a href="screenshots/05b_dry_run_change_step.png"><img class="shot" loading="lazy" src="screenshots/05b_dry_run_change_step.png" alt="Изменяющий шаг в сухом прогоне"></a></figure><figure id="f7"><h3>Длительный шаг</h3><p>Пока шаг идёт, окно не блокируется: можно открывать другие вкладки.</p><a href="screenshots/06a_long_step_running.png"><img class="shot" loading="lazy" src="screenshots/06a_long_step_running.png" alt="Длительный шаг"></a></figure><figure id="f8"><h3>Вкладка «Монитор БД»</h3><p>Состояние базы, сессии утилиты, процент выполнения длительных операций и журнал пересчёта. Обновляется каждые 10 секунд.</p><a href="screenshots/06_monitor_longops.png"><img class="shot" loading="lazy" src="screenshots/06_monitor_longops.png" alt="Вкладка «Монитор БД»"></a></figure><figure id="f9"><h3>Вкладка «Процессы»</h3><p>Каждый запуск — отдельный процесс: PID, время, статус, вывод на лету и кнопка остановки.</p><a href="screenshots/07_processes.png"><img class="shot" loading="lazy" src="screenshots/07_processes.png" alt="Вкладка «Процессы»"></a></figure><figure id="f10"><h3>Карта процесса в браузере</h3><p>Кнопка «Карта процесса» открывает схему: зачем нужна миграция, окно по часам и все шаги. Текущий шаг помечен «ВЫ ЗДЕСЬ».</p><a href="screenshots/08_process_map_running.png"><img class="shot" loading="lazy" src="screenshots/08_process_map_running.png" alt="Карта процесса в браузере"></a></figure><figure id="f11"><h3>Подробности шага на карте</h3><p>Щелчок по шагу открывает описание, риск и точный SQL.</p><a href="screenshots/08b_process_step_detail.png"><img class="shot" loading="lazy" src="screenshots/08b_process_step_detail.png" alt="Подробности шага на карте"></a></figure><figure id="f12"><h3>Монитор во время сверки</h3><p>Сессия утилиты видна в базе вместе с шагом, который она выполняет.</p><a href="screenshots/09a_balance_running_monitor.png"><img class="shot" loading="lazy" src="screenshots/09a_balance_running_monitor.png" alt="Монитор во время сверки"></a></figure><figure id="f13"><h3>Сверка сальдо</h3><p>Шаг W14 считает сальдо двумя способами и сравнивает построчно. Ожидается 0 расхождений.</p><a href="screenshots/09_balance_check.png"><img class="shot" loading="lazy" src="screenshots/09_balance_check.png" alt="Сверка сальдо"></a></figure><figure id="f14"><h3>Проверки после окна</h3><p>Те же проверки с ожиданиями стадии «после».</p><a href="screenshots/09b_checks_post.png"><img class="shot" loading="lazy" src="screenshots/09b_checks_post.png" alt="Проверки после окна"></a></figure><figure id="f15"><h3>Все шаги пройдены</h3><p>Статусы: ✔ выполнен, ◐ сухой прогон.</p><a href="screenshots/10_all_steps.png"><img class="shot" loading="lazy" src="screenshots/10_all_steps.png" alt="Все шаги пройдены"></a></figure><figure id="f16"><h3>Откат</h3><p>Шаг отката доступен в любой момент. В сухом прогоне показывает, что именно будет выполнено.</p><a href="screenshots/11_rollback_dry.png"><img class="shot" loading="lazy" src="screenshots/11_rollback_dry.png" alt="Откат"></a></figure><figure id="f17"><h3>Вкладка «Журнал»</h3><p>Хронология всех действий. Полный вывод каждого запуска сохраняется в папке <code>logs</code>.</p><a href="screenshots/12_journal.png"><img class="shot" loading="lazy" src="screenshots/12_journal.png" alt="Вкладка «Журнал»"></a></figure><figure id="f18"><h3>Карта процесса после прогона</h3><p>Все шаги отмечены, внизу — процессы и состояние базы.</p><a href="screenshots/13_process_map_done.png"><img class="shot" loading="lazy" src="screenshots/13_process_map_done.png" alt="Карта процесса после прогона"></a></figure></section>
+
+<section><h2>Режимы</h2>
+<table><tr><th>Режим</th><th>Что делает</th><th>Как включить</th></tr>
+<tr><td><b>Сухой прогон</b></td><td>Проверки выполняются. Изменяющие шаги показывают SQL и выполняют только контрольный запрос. Вместо пересчёта — имитация на 40 секунд.</td><td>включён по умолчанию</td></tr>
+<tr><td><b>Боевой</b></td><td>Шаги реально меняют базу. Каждый изменяющий шаг спрашивает подтверждение.</td><td>снять флажок «Сухой прогон»; на продуктивной базе нужно ввести слово <code>PROD</code></td></tr>
+<tr><td><b>Эксперт</b></td><td>Разрешает выполнять шаги не по порядку.</td><td>флажок «Эксперт»</td></tr></table>
+<div class="danger">Продуктивную базу меняют только при письменном согласии владельца базы и в согласованное окно: на время пересчёта (около 4 часов) проведение документов закрыто.</div></section>
+
+<section><h2>Частые вопросы</h2>
+<h3>Можно ли что-то сломать сухим прогоном?</h3><p>Нет. В сухом прогоне выполняются только запросы на чтение.</p>
+<h3>Что будет, если закрыть окно во время длительного шага?</h3><p>Сеанс прервётся, незавершённая транзакция в базе откатится. Пересчёт придётся запускать заново.</p>
+<h3>Где пароль?</h3><p>Только в памяти программы до закрытия окна. В файлы, журналы и командную строку он не попадает.</p>
+<h3>Как откатить?</h3><p>Шаг «Откат» в конце списка. Он возвращает код пакета из копии, снятой шагом P1, очищает таблицы сальдо и выключает триггеры. Проводки не затрагиваются.</p>
+<h3>Что проверено, а что нет?</h3><p>На тестовой базе пройден весь процесс в сухом прогоне: подключение, проверки, копия и сравнение пакета, контрольные запросы всех шагов, сверка сальдо (75 строк, расхождений 0). Изменяющие шаги в боевом режиме не выполнялись.</p>
+<h3>Где подробности?</h3><p><a href="documentation.html">Полная документация</a> — 13 разделов: настройки, проверки, мониторинг, откат, типичные ошибки. <a href="process_map.html">Карта процесса</a> — схема со всеми шагами и SQL.</p></section>
+</main></body></html>

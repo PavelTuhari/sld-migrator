@@ -1,0 +1,8 @@
+__pycache__/
+sld_migrator/logs/
+sld_migrator/state/
+sld_migrator/backups/
+sld_migrator/screenshots/
+sld_migrator/docs/
+dist/
+*.pyc
