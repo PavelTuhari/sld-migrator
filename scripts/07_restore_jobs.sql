@@ -9,18 +9,19 @@ whenever sqlerror exit failure rollback
 -- онлайн-компактирование по счетам в 06:00, как на тесте.
 -- Job 13 (un$sld.rebuild, broken) удаляется, чтобы его случайно не включили
 -- и он не пересёкся с job 8 .
+declare
+  -- ближайшие 06:00: если окно закончилось после полуночи, первый запуск будет этим же утром
+  v_next date := case when sysdate < trunc(sysdate) + 6/24 then trunc(sysdate) + 6/24 else trunc(sysdate) + 1 + 6/24 end;
 begin
   dbms_job.change(8,
     what      => 'begin -- rebuild partial pe conturi'||chr(10)||'pkg_sld_util.partial_compact_sld(p_raise => false);'||chr(10)||'end;',
-    next_date => trunc(sysdate) + 1 + 6/24,
+    next_date => v_next,
     interval  => 'TRUNC(SYSDATE) + 1 + 6/24');
-  dbms_job.broken(8, false, trunc(sysdate) + 1 + 6/24);
+  dbms_job.broken(8, false, v_next);
   dbms_job.remove(13);
   commit;
 end;
 /
--- Если окно закончилось до 06:00 того же дня и первый прогон нужен уже сегодня —
--- заменить в обоих местах «trunc(sysdate) + 1 + 6/24» на «trunc(sysdate) + 6/24».
 
 -- ШАГ 2. Какие задания пропустили своё время, пока планировщик стоял.
 -- ВНИМАНИЕ: они стартуют сразу после шага 3. Если окно перешло через полночь,

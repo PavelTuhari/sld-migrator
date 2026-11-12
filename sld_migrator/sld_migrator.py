@@ -22,11 +22,12 @@ from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
 
+import keepalive_relay
 import steps as S
 import webdocs
 
 APP_DIR = Path(__file__).resolve().parent
-VERSION = "1.0 (11.11.2026)"
+VERSION = "1.1 (12.11.2026)"
 STATUS_ICON = {"pending": "○", "running": "▶", "done": "✔", "dry": "◐", "failed": "✖", "skipped": "➜"}
 STATUS_RU = {"pending": "ожидает", "running": "выполняется", "done": "выполнен", "dry": "сухой прогон",
              "failed": "ошибка", "skipped": "отмечен вручную"}
@@ -107,17 +108,25 @@ class Engine:
         self.profile = None          # dict профиля
         self.profile_name = None
         self.password = None
+        self.dsn = None              # строка соединения, которой пользуется sqlplus (через ретранслятор или напрямую)
+        self.relay = None            # keepalive_relay.Relay или None
         self.log_dir = APP_DIR / "logs"
 
     def set_profile(self, name, password):
         self.profile_name, self.profile, self.password = name, self.cfg.profiles[name], password
+        # Удержание соединения: без него многочасовой шаг W8 обрывается сетевым оборудованием (см. keepalive_relay.py).
+        try:
+            sec = int(self.profile.get("keepalive", 60) or 0)
+        except ValueError:
+            sec = 60
+        self.dsn, self.relay = keepalive_relay.dsn_via_relay(self.profile["dsn"], sec)
 
     def _script(self, body, tag, strict, guard=True):
         p = self.profile
         host = p.get("expected_host", "").lower().replace("'", "")
         out = ["set echo off feedback on heading on pagesize 500 linesize 250 trimspool on trimout on tab off verify off define off sqlblanklines on",
                "whenever oserror exit 8",
-               'connect %s/"%s"@%s' % (p["user"], self.password, p["dsn"]),
+               'connect %s/"%s"@%s' % (p["user"], self.password, self.dsn or p["dsn"]),
                "set serveroutput on size unlimited",
                "set heading off feedback off",
                "select '@@CONNECTED|'||sys_context('USERENV','SERVER_HOST') from dual;"]
@@ -493,7 +502,7 @@ class App:
                 t.column(c, width=w, stretch=(c == cols[-1]))
             t.pack(fill="both", expand=True, padx=3, pady=3)
             return t
-        self.mon_sess = tv("Сессии утилиты в базе (v$session, module = SLDMIG)",
+        self.mon_sess = tv("Сессии утилиты в базе (v$session; во время пересчёта модуль сессии — pkg_sld_util)",
                            ("sid", "ser", "st", "act", "sec", "sql", "undo", "ev"),
                            ("SID", "Serial#", "Статус", "Шаг", "Сек.", "SQL_ID", "UNDO, МБ", "Ожидание / событие"),
                            (60, 70, 80, 70, 60, 120, 80, 400), 4)
@@ -677,6 +686,12 @@ class App:
         self.profile_var.set(name)
         self.eng.set_profile(name, pwd)
         self.conn_lbl.config(text="  соединение…  ", bg="#64748b")
+        if self.eng.relay:
+            self.log("Удержание соединения включено: проба каждые %d с, локальный порт %d (параметр профиля keepalive)."
+                     % (self.eng.relay.idle, self.eng.relay.port), "dim")
+        else:
+            self.log("Удержание соединения выключено (keepalive = 0 или адрес базы задан псевдонимом): "
+                     "многочасовой шаг W8 может оборваться на сетевом оборудовании.", "hl")
 
         def done(p):
             if p.status == "ok" and "CONNECTED" in p.marks:
@@ -1113,7 +1128,7 @@ select '@@M_FREE_MB|'||nvl(round(sum(bytes)/1048576),0) from dba_free_space wher
 select '@@M_UNDO_MB|'||nvl(round(sum(t.used_ublk)*8192/1048576),0) from v$transaction t;
 select '##S|'||s.sid||'|'||s.serial#||'|'||s.status||'|'||nvl(s.action,'-')||'|'||s.last_call_et||'|'||nvl(s.sql_id,'-')||'|'||
        nvl((select round(t.used_ublk*8192/1048576) from v$transaction t where t.addr=s.taddr),0)||'|'||nvl(s.event,'-')
-from v$session s where s.module='SLDMIG';
+from v$session s where s.module='SLDMIG' or (s.module='pkg_sld_util' and s.username=user);
 select '##L|'||sid||'|'||opname||'|'||nvl(target_desc,target)||'|'||sofar||'|'||totalwork||'|'||elapsed_seconds||'|'||nvl(time_remaining,0)
 from v$session_longops where sofar < totalwork and last_update_time > sysdate - 2/1440;
 select '##G|'||to_char(log_date,'dd.mm hh24:mi:ss')||'|'||message_type||'|'||replace(substr(message,1,200),chr(10),' ') from (
