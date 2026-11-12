@@ -27,7 +27,7 @@ import steps as S
 import webdocs
 
 APP_DIR = Path(__file__).resolve().parent
-VERSION = "1.1 (12.11.2026)"
+VERSION = "1.2 (12.11.2026)"
 STATUS_ICON = {"pending": "○", "running": "▶", "done": "✔", "dry": "◐", "failed": "✖", "skipped": "➜"}
 STATUS_RU = {"pending": "ожидает", "running": "выполняется", "done": "выполнен", "dry": "сухой прогон",
              "failed": "ошибка", "skipped": "отмечен вручную"}
